@@ -18,7 +18,7 @@ class HexGame(Board):
         display_game=False
     ):
         super().__init__(board_type, size)
-        
+        self.size = size
         # Initialize all cells as empty
         self.game_state = {
             coord: BoardCell.EMPTY for row in self.board for coord in row}
@@ -247,50 +247,6 @@ class HexGame(Board):
                         stack.append(coord)
         return False
 
-
-    '''
-
-    def find_line_(self, state, start, colour, prev):
-        """
-        Implement a fairly standard depth-first search to
-        find a winning line for a player. Since only one player
-        can win, we don't need to check for the shortest, or most
-        optimal line, so a DFS is sufficient, but an algorithm for
-        checking disjoint sets is probably faster.
-        """
-        # Set node as visited
-        prev.append(start)
-        # Set finish line according to player colour
-        finish_line = self.blue_north_west
-        if colour == BoardCell.RED:
-            finish_line = self.red_north_east
-        
-        if len(prev) > 5:
-            print("-------------------")
-            if colour == BoardCell.RED:
-                print("RED:")
-                print(self.red_south_west)
-            else:
-                print("BLUE:")
-                print(self.blue_south_east)
-            print(prev)
-            print(finish_line)
-        # Check if we have reached a line to the finish
-        if start in finish_line:
-            return True
-        print(self.neighbour_dict[start].values())
-        # Check all neighbours of node
-        for coord in self.neighbour_dict[start].values():
-
-            # If neighbour is of same colour and not already visited
-            # then call function recursively until we find the line
-            i = self.coord_to_state_index(coord)
-            if (state[i] == colour \
-                and coord not in prev):
-                return self.find_line_(state, coord, colour, prev)
-        
-        return False
-    '''
     # Some util functions to convert fram tuple representation
     # to the actual coordinates of the board and back
     def one_hot_to_action(self, index):
@@ -301,6 +257,9 @@ class HexGame(Board):
         s = state[1:]
         for r in range(self.size):
             print(s[r*self.size:(r+1)*self.size])
+    def get_game_size(self):
+        return self.size
+    
     """Display methods and visualisation"""
     def init_graph(self):
         plt.clf()

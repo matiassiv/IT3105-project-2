@@ -18,6 +18,7 @@ class MCTS:
     def __init__(self, game, ann):
         self.game = game
         self.ann = ann
+        self.size = game.get_game_size()
 
         self.eps = 0.1
         self.max_games = cfg.mcts["max_games"]
@@ -38,7 +39,7 @@ class MCTS:
         the ann after enough games are played.
         """
         # Perform MCTS
-        time_end = time.time() + 1 # Search games for x seconds
+        time_end = time.time() + 2 # Search games for x seconds
         while time.time() < time_end:
             self.search(state)
         
@@ -138,19 +139,18 @@ class MCTS:
 
     
     def get_ann_action(self, state):
-        preds = self.ann.forward(state).detach().numpy()
-        #print(preds)
+        # TODO add conversion from state to appropriate input here
+        nn_input = self.ann.convert_state_to_input(state, self.size)
+        preds = self.ann.forward(nn_input).detach().numpy().flatten()
+        
         valids = self.game.generate_legal_moves(state)
-        if np.sum(valids) == 0:
-            print("Error has occurred")
-        #print(valids)
         valid_preds = preds * valids # Mask illegal moves
         sum_Ps = np.sum(valid_preds)
         if sum_Ps > 0:
             valid_preds /= sum_Ps  # renormalize
         else:
             # if all valid moves were masked make all valid moves equally probable
-            #print("All valid moves were masked, nn may be overfitting.")
+            print("All valid moves were masked, nn may be overfitting.")
             valid_preds += valids
             valid_preds /= np.sum(valid_preds)
         

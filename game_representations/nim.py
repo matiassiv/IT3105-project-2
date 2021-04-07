@@ -1,5 +1,6 @@
 class Nim:
     def __init__(self, N=50, K=5, turn=1, display_game=True):
+        self.N = N
         self.remaining = N
         self.K = K
         self.turn = turn
@@ -48,6 +49,9 @@ class Nim:
                 print("Player", winner, "won the game!")
             return winner
         return 0
+    
+    def get_game_size(self):
+        return self.N
 
 if __name__ == "__main__":
     n = Nim()

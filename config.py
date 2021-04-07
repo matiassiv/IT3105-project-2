@@ -1,10 +1,10 @@
 nim_settings = {
-    "N": 17,
-    "K": 5
+    "N": 71,
+    "K": 4
 }
 
 hex_settings = {
-    "size": 6,
+    "size": 3,
     "graphing_freq": 2
 }
 

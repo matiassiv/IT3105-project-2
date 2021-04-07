@@ -3,19 +3,21 @@ from game_representations.nim import Nim
 import config as cfg
 
 class StateManager:
-    def __init__(self):
-
+    def __init__(self, turn=0):
+        starting_player = cfg.state_manager["turn"]
+        if turn:
+            starting_player = turn
         if cfg.state_manager["game_type"] == "nim":
             self.game = Nim(
                 cfg.nim_settings["N"],
                 cfg.nim_settings["K"],
-                cfg.state_manager["turn"],
+                starting_player,
                 cfg.state_manager["display_game"]
             )
         elif cfg.state_manager["game_type"] == "hex":
             self.game = HexGame(
                 size=cfg.hex_settings["size"],
-                turn=cfg.state_manager["turn"],
+                turn=starting_player,
                 graphing_freq=cfg.hex_settings["graphing_freq"],
                 display_game=cfg.state_manager["display_game"]
             )
@@ -39,6 +41,9 @@ class StateManager:
 
     def one_hot_to_action(self, one_hot_index):
         return self.game.one_hot_to_action(one_hot_index)
+    
+    def get_game_size(self):
+        return self.game.get_game_size()
 
 
 if __name__ == "__main__":
