@@ -15,12 +15,12 @@ class Node:
 """
 
 class MCTS:
-    def __init__(self, game, ann):
+    def __init__(self, game, ann, eps=0.1):
         self.game = game
         self.ann = ann
         self.size = game.get_game_size()
 
-        self.eps = 0.1
+        self.eps = eps
         self.max_games = cfg.mcts["max_games"]
         self.Qsa = {}  # stores Q values for edge s,a 
         self.Nsa = {}  # stores #times edge s,a was visited
