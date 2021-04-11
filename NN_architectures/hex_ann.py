@@ -7,9 +7,6 @@ import numpy as np
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using {} device".format(device))
 
-"""
-TODO Add support for also conv-layers in the network
-"""
 
 class HexANN(nn.Module):
     def __init__(self, input_size, output_size):

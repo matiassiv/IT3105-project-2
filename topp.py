@@ -7,9 +7,10 @@ from NN_architectures.hex_ann import HexANN
 
 
 class TOPP:
-    def __init__(self, num_contenders, num_games, contender_paths):
+    def __init__(self, num_contenders, num_games, contender_paths, search=True):
         self.num_contenders = num_contenders
         self.num_games = num_games
+        self.search = search
 
         # Get game info to properly load model
         game = StateManager()
@@ -106,13 +107,13 @@ class TOPP:
         s = game.get_game_state()
         while True:
             # TODO add actual game update for potential display of game
-            action = np.argmax(m1.getActionProb(s))
+            action = np.argmax(m1.getActionProb(s, self.search))
             a = game.one_hot_to_action(action)
             s = game.generate_next_state(s, a)
             result = game.check_game_ended(s)
             if result:
                 return result
-            action = np.argmax(m2.getActionProb(s))
+            action = np.argmax(m2.getActionProb(s, self.search))
             a = game.one_hot_to_action(action)
             s = game.generate_next_state(s, a)
             result = game.check_game_ended(s)
@@ -133,7 +134,11 @@ class TOPP:
 if __name__ == "__main__":
     path = "trained_models/hex_5/iteration_"
     tournament = TOPP(
-        4, 14, [path+"0.pt", path+"50.pt", path+"150.pt", path+"350.pt"])
+        4, 
+        50, 
+        [path+"0.pt", path+"50.pt", path+"150.pt", path+"350.pt"], 
+        False
+        )
 
     results = tournament.play_tournament()
     tournament.print_tournament_results(results)

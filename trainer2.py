@@ -6,6 +6,10 @@ import random
 from state_manager import StateManager
 from mcts import MCTS
 from ann import ANN
+"""
+Duplicate installs of some library on old computer, so need to set this
+flag to use it for training
+"""
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
