@@ -1,0 +1,19 @@
+ANN Layers:
+self.conv_layers = nn.Sequential(
+            nn.Conv2d(3, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 2, 1),
+            nn.BatchNorm2d(2),
+            nn.ReLU(),
+            nn.Flatten(start_dim=1)
+        )
+conv_output_size = self.get_output_shape()
+
+self.output = nn.Sequential(
+            nn.Linear(conv_output_size[1], output_size),
+            nn.Softmax(dim=-1)
+        )

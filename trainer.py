@@ -1,11 +1,11 @@
-from ann import ANN
-from mcts import MCTS
-from state_manager import StateManager
-import random
-import numpy as np
-import torch
-from torch import nn
 import matplotlib.pyplot as plt
+from torch import nn
+import torch
+import numpy as np
+import random
+from state_manager import StateManager
+from mcts import MCTS
+from ann import ANN
 
 """
 Function for the entire RL with ANN and MCTS 
