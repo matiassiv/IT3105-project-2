@@ -22,18 +22,19 @@ def loss_p(outputs, targets):
     return -torch.sum(targets * torch.log(1e-9 + outputs)) / targets.size()[0]
 
 
+search_time = 1.5
 game = StateManager()
 s = game.get_game_state()
 size = game.get_game_size()
 input_size = size
 output_size = len(game.generate_legal_moves(game.get_game_state()))
 ann = ANN(input_size, output_size)
-m = MCTS(game, ann)
+m = MCTS(game, ann, search_time=search_time)
 #loss_fn = nn.KLDivLoss(reduction="batchmean", log_target=True)
 loss_fn = loss_p
 optimizer = torch.optim.Adam(ann.model.parameters(), lr=0.02)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-    optimizer, 'min', patience=15, factor=0.5, eps=5e-5)  # Reduce learning rate by a factor of 2 if loss doesn't decrease after 15 iterations
+    optimizer, 'min', patience=15, factor=0.4, eps=5e-5)  # Reduce learning rate by a factor of 2 if loss doesn't decrease after 15 iterations
 print(ann.model)
 replay_buffer = []
 accs = []
@@ -43,14 +44,14 @@ results[1] = [0, 0]
 results[2] = [0, 0]
 turn = 1
 i = 0
-while i <= 350:
+while i <= 450:
     if len(losses) > 0:
         print(i, len(replay_buffer), losses[-1], accs[-1], flush=True)
     else:
         print(i, len(replay_buffer), flush=True)
-    if i % 50 == 0:
+    if i % 25 == 0:
         torch.save(ann.model.state_dict(),
-                   "trained_models/hex_5_run_2/iteration_"+str(i)+".pt")
+                   "trained_models/hex_6/iteration_"+str(i)+".pt")
     while True:
         action_prob = m.getActionProb(s)
         replay_buffer.append(
@@ -65,20 +66,20 @@ while i <= 350:
 
     # Get random minibatch
 
-    if len(replay_buffer) > 64:
-        batch = random.sample(replay_buffer, 64)
+    if len(replay_buffer) > 256:
+        batch = random.sample(replay_buffer, 128)
         loss, acc = ann.train_step(loss_fn, optimizer, batch)
         losses.append(loss)
         accs.append(acc)
         scheduler.step(loss)
         i += 1
-        if len(replay_buffer) > 1000:
+        if len(replay_buffer) > 500:
             # Remove early games from buffer
-            replay_buffer = replay_buffer[100:]
+            replay_buffer = replay_buffer[200:]
     turn = turn % 2 + 1
     game = StateManager(turn)
     s = game.get_game_state()
-    m = MCTS(game, ann)
+    m = MCTS(game, ann, search_time=search_time)
 
 print(results)
 x = np.arange(len(losses))
