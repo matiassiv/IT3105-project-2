@@ -76,12 +76,8 @@ class TOPP:
             # Model 1 is starting player, so if starting color wins then model 1 wins
             if result == starting_color:
                 m1_results += 1
-                # m1_results.append(1)
-                # m2_results.append(-1)
             else:
                 m2_results += 1
-                # m1_results.append(-1)
-                # m2_results.append(1)
 
         for i in range(halfway_point):
             # Alternate colors to start to test more of the network
@@ -91,13 +87,9 @@ class TOPP:
             # Model 2 is starting player, so if starting color wins then model 2 wins
             if result == starting_color:
                 m2_results += 1
-                # m1_results.append(-1)
-                # m2_results.append(1)
             else:
                 m1_results += 1
-                # m1_results.append(1)
-                # m2_results.append(-1)
-
+                
         return m1_results, m2_results
 
     def play_game(self, p1, p2, starting_color=1):
@@ -125,19 +117,20 @@ class TOPP:
         total_scores = [sum(results[i]) for i in range(self.num_contenders)]
 
         for i in range(self.num_contenders):
+            print("-----------------------------------------------")
             print(f"Contender {i}")
             print("Results:", results[i])
             print("Total score:", total_scores[i])
-            print("-----------------------------------------------")
+            
 
 
 if __name__ == "__main__":
     path = "trained_models/hex_5/iteration_"
     tournament = TOPP(
         4, 
-        50, 
+        14, 
         [path+"0.pt", path+"50.pt", path+"150.pt", path+"350.pt"], 
-        False
+        True
         )
 
     results = tournament.play_tournament()

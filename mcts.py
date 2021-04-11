@@ -46,12 +46,12 @@ class MCTS:
             # Get visit counts for all edges going out from the root state
             valids = self.game.generate_legal_moves(state)
             counts = [self.Nsa[(state, a)] if (state, a)
-                    in self.Nsa else 0 for a in range(len(valids))]
+                      in self.Nsa else 0 for a in range(len(valids))]
             # print(counts)
             sum_counts = np.sum(counts)
             # print(sum_counts)
             return [c / sum_counts for c in counts]
-        
+
         # Pick move based on model eval without any search
         nn_input = self.ann.convert_state_to_input(state, self.size)
         preds = self.ann.forward(nn_input).detach().numpy().flatten()
@@ -66,7 +66,7 @@ class MCTS:
             print("All valid moves were masked, nn may be overfitting.")
             valid_preds += valids
             valid_preds /= np.sum(valid_preds)
-        
+
         return valid_preds
 
     def search(self, state):
@@ -155,7 +155,7 @@ class MCTS:
                 return 1 if game_result == 1 else -1
 
     def get_ann_action(self, state):
-        
+
         nn_input = self.ann.convert_state_to_input(state, self.size)
         preds = self.ann.forward(nn_input).detach().numpy().flatten()
 
@@ -172,10 +172,10 @@ class MCTS:
 
         r = np.random.rand()
         if r < self.eps:
-            sum_p = np.sum(valids)
+            #sum_p = np.sum(valids)
             # Choose a random valid action
             action = np.random.choice(
-                len(valid_preds), p=[v/sum_p for v in valids])
+                len(valid_preds), p=valid_preds)
             return self.game.one_hot_to_action(action)
         else:
             action = np.argmax(valid_preds)

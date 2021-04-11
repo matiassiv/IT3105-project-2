@@ -35,32 +35,33 @@ class HexANN(nn.Module):
         )
 
     def forward(self, x):
-       
+
         x = self.conv_layers(x)
         probs = self.output(x)
         return probs
-    
+
     def train_step(self, loss_fn, optimizer, batch):
 
         X, y = zip(*batch)
         X = torch.squeeze(torch.stack(X))
         # Predict action probabilities
         pred = self.forward(X)
-        print(pred)
+        # print(pred)
 
         # Get prediction loss and perform backprop
         y = torch.tensor(y, dtype=torch.float)
-        print(y)
+        # print(y)
         loss = loss_fn(pred, y)
-        print("LOSS:", loss)
-        print("-----------------------------------------------------------------")
+        #print("LOSS:", loss)
+        # print("-----------------------------------------------------------------")
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-        return loss
+        acc = self.accuracy(pred, y)
+        return loss, acc
 
     def convert_state_to_input(self, state, size):
-        # Trenger en fornuftig encoding for å best mulig representere 
+        # Trenger en fornuftig encoding for å best mulig representere
         # brettet i hex. En mulighet er å lage et slags bilde med tre kanaler
         # 1. kanal: plasseringen av alle steinene til player 1
         # 2. kanal: plasseringen av alle steinene til player 2
@@ -76,12 +77,19 @@ class HexANN(nn.Module):
         turn_plane = torch.tensor(turn_plane, dtype=torch.float)
         return torch.unsqueeze(torch.stack((player_1, player_2, turn_plane)), 0)
 
-
-
-
-
     def get_output_shape(self):
         state = [1] + [0 for i in range(self.input_size**2)]
         nn_input = self.convert_state_to_input(state, self.input_size)
 
         return self.conv_layers(nn_input).data.shape
+
+    def accuracy(self, preds, targets):
+
+        # Mask invalid moves
+        masked_preds = preds
+        masked_preds[targets == 0] = 0
+
+        targets_max = torch.argmax(targets, dim=1)
+        preds_max = torch.argmax(masked_preds, dim=1)
+
+        return torch.eq(targets_max, preds_max).sum() / targets.size(0)
