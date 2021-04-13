@@ -1,6 +1,7 @@
 import config as cfg
 import numpy as np
 import time
+import torch
 """
 First attempt to not use a node class to perform tree search
 class Node:
@@ -16,7 +17,7 @@ class Node:
 
 
 class MCTS:
-    def __init__(self, game, ann, eps=0.1, c_ucb=1.2, search_time=0.2):
+    def __init__(self, game, ann, eps=0.1, c_ucb=1.2, search_time=2):
         self.game = game
         self.ann = ann
         self.eps = eps
@@ -24,10 +25,10 @@ class MCTS:
         self.search_time = search_time
 
         self.size = game.get_game_size()
-        self.max_games = cfg.mcts["max_games"]
         self.Qsa = {}  # stores Q values for edge s,a
         self.Nsa = {}  # stores #times edge s,a was visited
         self.Ns = {}  # stores #times state s was visited
+        self.Ps = {}
 
     def getActionProb(self, state, search=True):
         """
@@ -39,8 +40,11 @@ class MCTS:
         """
         if search:
             # Perform MCTS
+            i = 0
             time_end = time.time() + self.search_time  # Search games for x seconds
-            while time.time() < time_end:
+            # Search for max 400 iterations and at least num_board_cells iterations
+            while (i < 400 and time.time() < time_end) or i < 14:
+                i += 1
                 self.search(state)
 
             # Get visit counts for all edges going out from the root state
@@ -49,12 +53,13 @@ class MCTS:
                       in self.Nsa else 0 for a in range(len(valids))]
             # print(counts)
             sum_counts = np.sum(counts)
-            # print(sum_counts)
-            return [c / sum_counts for c in counts]
+            #print(sum_counts, flush=True)
+            return np.array([c / sum_counts for c in counts])
 
         # Pick move based on model eval without any search
         nn_input = self.ann.convert_state_to_input(state, self.size)
-        preds = self.ann.forward(nn_input).detach().numpy().flatten()
+        with torch.no_grad():
+            preds = self.ann.forward(nn_input).detach().numpy().flatten()
 
         valids = self.game.generate_legal_moves(state)
         valid_preds = preds * valids  # Mask illegal moves
@@ -156,8 +161,13 @@ class MCTS:
 
     def get_ann_action(self, state):
 
-        nn_input = self.ann.convert_state_to_input(state, self.size)
-        preds = self.ann.forward(nn_input).detach().numpy().flatten()
+        if state not in self.Ps:
+            nn_input = self.ann.convert_state_to_input(state, self.size)
+            with torch.no_grad():
+                preds = self.ann.forward(nn_input).detach().numpy().flatten()
+            self.Ps[state] = preds
+        else:
+            preds = self.Ps[state]
 
         valids = self.game.generate_legal_moves(state)
         valid_preds = preds * valids  # Mask illegal moves

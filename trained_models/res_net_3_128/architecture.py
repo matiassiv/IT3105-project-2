@@ -41,21 +41,19 @@ class HexResANN(nn.Module):
         self.output_size = output_size
 
         self.input_conv = nn.Sequential(
-            nn.Conv2d(3, 64, 5, padding=2),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(3, 128, 3, padding=1),
+            nn.BatchNorm2d(128),
             nn.LeakyReLU(),
         )
-        self.res1 = ResBlock(64, 64, 1)
-        self.res2 = ResBlock(64, 64, 1)
-        #self.res3 = ResBlock(64, 64, 1)
-    
+        self.res1 = ResBlock(128, 128, 1)
+        self.res2 = ResBlock(128, 128, 1)
+        self.res3 = ResBlock(128, 128, 1)
         self.reduce_conv = nn.Sequential(
-            nn.Conv2d(64, 3, 1),
-            nn.BatchNorm2d(3),
+            nn.Conv2d(128, 2, 1),
+            nn.BatchNorm2d(2),
             nn.LeakyReLU(),
             nn.Flatten(start_dim=1)
         )
-        
         conv_output_size = self.get_output_shape()
 
         self.output = nn.Sequential(
@@ -68,8 +66,7 @@ class HexResANN(nn.Module):
         x = self.input_conv(x)
         x = self.res1(x)
         x = self.res2(x)
-        #x = self.res3(x)
-        #x = self.flatten(x)
+        x = self.res3(x)
         x = self.reduce_conv(x)
         x = self.output(x)
         return x
@@ -117,7 +114,6 @@ class HexResANN(nn.Module):
         x = self.input_conv(nn_input)
         x = self.res1(x)
         x = self.res2(x)
-        #x = self.res3(x)
         x = self.reduce_conv(x)
         return x.data.shape
 

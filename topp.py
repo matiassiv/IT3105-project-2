@@ -4,27 +4,20 @@ import config as cfg
 from state_manager import StateManager
 from mcts import MCTS
 from NN_architectures.hex_ann import HexANN
+from NN_architectures.hex_res_ann import HexResANN
+from trained_models.res_net_3_128 import architecture as res_128_3
+from trained_models.hex_6_res_temperature import architecture as res_64_2
 
 
 class TOPP:
-    def __init__(self, num_contenders, num_games, contender_paths, search=True):
+    def __init__(self, num_contenders, num_games, contenders, search=True, search_time=1.4):
         self.num_contenders = num_contenders
         self.num_games = num_games
         self.search = search
-
-        # Get game info to properly load model
-        game = StateManager()
-        input_size = game.get_game_size()
-        output_size = len(game.generate_legal_moves(game.get_game_state()))
+        self.search_time = search_time
 
         # Create a list of contender models
-        self.contenders = []
-
-        for path in contender_paths:
-            model = HexANN(input_size, output_size)
-            model.load_state_dict(torch.load(path))
-            model.eval()
-            self.contenders.append(model)
+        self.contenders = contenders
 
         print(self.contenders)
 
@@ -79,6 +72,7 @@ class TOPP:
             else:
                 m2_results += 1
 
+            print("M1:", m1_results, "M2:", m2_results, flush=True)
         for i in range(halfway_point):
             # Alternate colors to start to test more of the network
             starting_color = i % 2 + 1
@@ -89,16 +83,19 @@ class TOPP:
                 m2_results += 1
             else:
                 m1_results += 1
+            print("M1:", m1_results, "M2:", m2_results, flush=True)
                 
         return m1_results, m2_results
 
     def play_game(self, p1, p2, starting_color=1):
+        # Initialize game and greedy settings for MCTS
         game = StateManager(starting_color)
-        m1 = MCTS(game, p1, 0)
-        m2 = MCTS(game, p2, 0)
+        m1 = MCTS(game, p1, eps=0.1, c_ucb=1, search_time=self.search_time) 
+        m2 = MCTS(game, p2, eps=0.1, c_ucb=1, search_time=self.search_time)
         s = game.get_game_state()
         while True:
             # TODO add actual game update for potential display of game
+      
             action = np.argmax(m1.getActionProb(s, self.search))
             a = game.one_hot_to_action(action)
             s = game.generate_next_state(s, a)
@@ -125,13 +122,49 @@ class TOPP:
 
 
 if __name__ == "__main__":
-    path = "trained_models/hex_5/iteration_"
+    path_res_3 = "trained_models/res_net_3_128/iteration_"
+    path_res_2_long = "trained_models/hex_6_res_temperature/iteration_"
+    path_multiple = "trained_models/multiple_iterations/iteration_"
+    contender_paths_res_3 = ["375.pt"]
+    contender_paths = ["50.pt"]
+    multiple_paths = ["0.pt", "2.pt", "4.pt"]
+    contenders = []
+
+    # Get game info to properly load model
+    game = StateManager()
+    input_size = game.get_game_size()
+    output_size = len(game.generate_legal_moves(game.get_game_state()))
+
+    for path in multiple_paths:
+        model = res_64_2.HexResANN(input_size, output_size)
+        model.load_state_dict(torch.load(path_multiple+path))
+        model.eval()
+        contenders.append(model)
+    print(contenders)
+    """
+    for path in contender_paths:
+        model = res_64_2.HexResANN(input_size, output_size)
+        model.load_state_dict(torch.load(path_res_2_long+path))
+        model.eval()
+        contenders.append(model)
+    
+    for path in contender_paths_res_3:
+            model = res_128_3.HexResANN(input_size, output_size)
+            model.load_state_dict(torch.load(path_res_3+path))
+            model.eval()
+            contenders.append(model)
+    """
+    
+
     tournament = TOPP(
-        4, 
-        14, 
-        [path+"0.pt", path+"50.pt", path+"150.pt", path+"350.pt"], 
-        True
+        num_contenders=len(contenders), 
+        num_games=12, 
+        contenders=contenders, 
+        search=True,
+        search_time=0.2
         )
 
     results = tournament.play_tournament()
     tournament.print_tournament_results(results)
+
+    #path+"0.pt", path+"50.pt", 

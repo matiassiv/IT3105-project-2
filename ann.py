@@ -1,6 +1,7 @@
 import config as cfg
 import torch
 from NN_architectures.hex_ann import HexANN
+from NN_architectures.hex_res_ann import HexResANN
 from NN_architectures.nim_ann import NimANN
 from torch import nn
 
@@ -14,7 +15,8 @@ class ANN():
             self.model = NimANN(input_size, output_size)
         
         elif cfg.state_manager["game_type"] == "hex":
-            self.model = HexANN(input_size, output_size)
+            self.model = HexResANN(input_size, output_size)
+            #self.model = HexANN(input_size, output_size)
 
     def forward(self, x):
         return self.model.forward(x)

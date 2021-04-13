@@ -45,32 +45,35 @@ class HexResANN(nn.Module):
             nn.BatchNorm2d(64),
             nn.LeakyReLU(),
         )
-        self.res1 = ResBlock(64, 64, 1)
-        self.res2 = ResBlock(64, 64, 1)
+        #self.res1 = ResBlock(64, 64, 1)
+        #self.res2 = ResBlock(64, 64, 1)
         #self.res3 = ResBlock(64, 64, 1)
-    
+        self.flatten = nn.Flatten()
+        """
         self.reduce_conv = nn.Sequential(
-            nn.Conv2d(64, 3, 1),
-            nn.BatchNorm2d(3),
+            nn.Conv2d(64, 2, 1),
+            nn.BatchNorm2d(2),
             nn.LeakyReLU(),
             nn.Flatten(start_dim=1)
         )
-        
+        """
         conv_output_size = self.get_output_shape()
 
         self.output = nn.Sequential(
-            nn.Linear(conv_output_size[1], output_size),
+            nn.Linear(conv_output_size[1], 400),
+            nn.ReLU(),
+            nn.Linear(400, output_size),
             nn.Softmax(dim=-1)
         )
 
     def forward(self, x):
 
         x = self.input_conv(x)
-        x = self.res1(x)
-        x = self.res2(x)
+        #x = self.res1(x)
+        #x = self.res2(x)
         #x = self.res3(x)
-        #x = self.flatten(x)
-        x = self.reduce_conv(x)
+        x = self.flatten(x)
+        #x = self.reduce_conv(x)
         x = self.output(x)
         return x
 
@@ -115,10 +118,10 @@ class HexResANN(nn.Module):
         state = [1] + [0 for i in range(self.input_size**2)]
         nn_input = self.convert_state_to_input(state, self.input_size)
         x = self.input_conv(nn_input)
-        x = self.res1(x)
-        x = self.res2(x)
+        #x = self.res1(x)
+        #x = self.res2(x)
         #x = self.res3(x)
-        x = self.reduce_conv(x)
+        x = self.flatten(x)
         return x.data.shape
 
     def accuracy(self, preds, targets):

@@ -4,7 +4,7 @@ nim_settings = {
 }
 
 hex_settings = {
-    "size": 5,
+    "size": 6,
     "graphing_freq": 2
 }
 

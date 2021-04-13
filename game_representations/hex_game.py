@@ -302,9 +302,16 @@ class HexGame(Board):
         return colours
 
 if __name__ == "__main__":
-    test1 = HexGame(size=5, display_game=True)
+    test1 = HexGame(size=6, display_game=False)
     state = test1.get_game_state()
     print(test1.generate_legal_moves(state))
+    state = [1]+[0]*30 + [1]*6
+    print(test1.generate_legal_moves(state))
+    test1.state_to_board(state)
+    state[1:] = state[1:][::-1]
+    print(test1.generate_legal_moves(state))
+    test1.state_to_board(state)
+    """
     while not test1.game_result:
         move = input("Select your move: ")
         if move == 'q':
@@ -313,5 +320,6 @@ if __name__ == "__main__":
         test1.update_game_state((r,c))
         state = test1.get_game_state()
         print(test1.generate_legal_moves(state))
+        """
 
     
