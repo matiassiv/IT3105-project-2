@@ -32,48 +32,56 @@ class ResBlock(nn.Module):
 
         return out
 
+class LinearBlock(nn.Module):
+    def __init__(self, incoming, outgoing, activation="relu"):
+        super(LinearBlock, self).__init__()
+        self.linear = nn.Linear(incoming, outgoing)
+        if activation == "relu":
+            self.activate = nn.ReLU()
+        elif activation == "tanh":
+            self.activate = nn.Tanh()
+        elif activation == "linear":
+            self.activate = nn.Identity()
+        elif activation == "sigmoid":
+            self.activate = nn.Sigmoid()
+    
+    def forward(self, x):
 
-class HexResANN(nn.Module):
+        x = self.linear(x)
+        x = self.activate(x)
+
+        return x
+
+class HexDemo(nn.Module):
     def __init__(self, input_size, output_size):
-        super(HexResANN, self).__init__()
+        super(HexDemo, self).__init__()
 
         self.input_size = input_size
         self.output_size = output_size
-
-        self.input_conv = nn.Sequential(
-            nn.Conv2d(3, 64, 5, padding=2),
-            nn.BatchNorm2d(64),
-            nn.LeakyReLU(),
-        )
-        #self.res1 = ResBlock(64, 64, 1)
-        #self.res2 = ResBlock(64, 64, 1)
-        #self.res3 = ResBlock(64, 64, 1)
-        self.flatten = nn.Flatten()
-        """
-        self.reduce_conv = nn.Sequential(
-            nn.Conv2d(64, 2, 1),
-            nn.BatchNorm2d(2),
-            nn.LeakyReLU(),
-            nn.Flatten(start_dim=1)
-        )
-        """
-        conv_output_size = self.get_output_shape()
-
-        self.output = nn.Sequential(
-            nn.Linear(conv_output_size[1], 400),
+        # Convfilter to handle stack of input planes
+        self.input = nn.Sequential(
+            nn.Conv2d(3,1,1),
             nn.ReLU(),
-            nn.Linear(400, output_size),
+            nn.Flatten()
+        )
+        self.layers = nn.ModuleList()
+        prev_size = self.get_hidden_input_shape()[1]
+        for i in range(len(cfg.DEMO_nn["hidden"])):
+            num_nodes = cfg.DEMO_nn["hidden"][i]
+            activation = cfg.DEMO_nn["activation_funcs"][i]
+            self.layers.append(LinearBlock(prev_size, num_nodes, activation))
+            prev_size = num_nodes
+
+       
+        self.output = nn.Sequential(
+            nn.Linear(prev_size, output_size),
             nn.Softmax(dim=-1)
         )
 
     def forward(self, x):
-
-        x = self.input_conv(x)
-        #x = self.res1(x)
-        #x = self.res2(x)
-        #x = self.res3(x)
-        x = self.flatten(x)
-        #x = self.reduce_conv(x)
+        x = self.input(x)
+        for layer in self.layers:
+            x = layer.forward(x)
         x = self.output(x)
         return x
 
@@ -114,14 +122,11 @@ class HexResANN(nn.Module):
         turn_plane = torch.tensor(turn_plane, dtype=torch.float)
         return torch.unsqueeze(torch.stack((player_1, player_2, turn_plane)), 0)
 
-    def get_output_shape(self):
+    def get_hidden_input_shape(self):
         state = [1] + [0 for i in range(self.input_size**2)]
         nn_input = self.convert_state_to_input(state, self.input_size)
-        x = self.input_conv(nn_input)
-        #x = self.res1(x)
-        #x = self.res2(x)
-        #x = self.res3(x)
-        x = self.flatten(x)
+        x = self.input(nn_input)
+        
         return x.data.shape
 
     def accuracy(self, preds, targets):

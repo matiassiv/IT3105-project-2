@@ -22,7 +22,7 @@ def loss_p(outputs, targets):
     return -torch.sum(targets * torch.log(1e-9 + outputs)) / targets.size()[0]
 
 
-search_time = 3.8
+search_time = 3.6
 game = StateManager()
 s = game.get_game_state()
 s0 = s
@@ -47,7 +47,7 @@ results[2] = [0, 0]
 turn = 1
 i = 0
 path = "trained_models/multiple_iterations/"
-while i <= 250:
+while i <= 150:
     ann.model.eval()
     if len(losses) > 0:
         print(i, len(replay_buffer), losses[-1], accs[-1], flush=True)
@@ -56,7 +56,7 @@ while i <= 250:
     if i % 25 == 0:
         torch.save(ann.model.state_dict(),
                    path+"iteration_"+str(i)+".pt")
-    temp = 1 + i // 30
+    temp = 1 + i // 20
     while True:
         action_prob = m.getActionProb(s)
         """
@@ -113,17 +113,15 @@ while i <= 250:
         losses.append(loss)
         accs.append(acc)
         scheduler.step(loss)
-        # print(s0)
-        # print(ann.forward(ann.convert_state_to_input(s0, size)))
+        
         i += 1
         buffer_size = len(replay_buffer)
+        #Throw away the earliest training data
+        if i < 3:
+            replay_buffer = []
         if buffer_size>2500:
             replay_buffer = replay_buffer[72:]
-        """
-        if len(replay_buffer) > 350:
-            # Remove early games from buffer
-            replay_buffer = []
-        """
+        
     turn = turn % 2 + 1
     game = StateManager(turn)
     s = game.get_game_state()

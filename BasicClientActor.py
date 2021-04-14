@@ -1,10 +1,12 @@
 import math
 import torch
 import numpy as np
+import config as cfg
 from NN_architectures.hex_res_ann import HexResANN
 from mcts import MCTS
 from state_manager import StateManager
-from client_side.Client_side.BasicClientActorAbs import BasicClientActorAbs
+from BasicClientActorAbs import BasicClientActorAbs
+
 
 class BasicClientActor(BasicClientActorAbs):
 
@@ -52,9 +54,12 @@ class BasicClientActor(BasicClientActorAbs):
         print("Board size:", game_params[0])
         size = game_params[0]
         
+        self.series_id = series_id
         self.game_number = 0
+        self.won = 0
+        self.lost = 0
         self.model = HexResANN(size, size**2)
-        self.model.load_state_dict(torch.load("trained_models/res_net_3_128/iteration_0.pt"))
+        self.model.load_state_dict(torch.load("trained_models/res_net_3_128/iteration_375.pt"))
         self.model.eval()
 
     def handle_game_start(self, start_player):
@@ -79,6 +84,10 @@ class BasicClientActor(BasicClientActorAbs):
         print("Game number", self.game_number,"is finished")
         print('Winner: ' + str(winner))
         print('End state: ' + str(end_state))
+        if winner == self.series_id:
+            self.won += 1
+        else:
+            self.lost += 1
 
     def handle_series_over(self, stats):
         """

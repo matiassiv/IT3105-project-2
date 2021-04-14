@@ -51,10 +51,10 @@ class MCTS:
             valids = self.game.generate_legal_moves(state)
             counts = [self.Nsa[(state, a)] if (state, a)
                       in self.Nsa else 0 for a in range(len(valids))]
-            # print(counts)
             sum_counts = np.sum(counts)
-            #print(sum_counts, flush=True)
-            return np.array([c / sum_counts for c in counts])
+           
+            # Return normalized visit counts as a probability distribution
+            return np.array([c / sum_counts for c in counts]) 
 
         # Pick move based on model eval without any search
         nn_input = self.ann.convert_state_to_input(state, self.size)

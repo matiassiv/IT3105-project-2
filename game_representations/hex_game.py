@@ -48,7 +48,7 @@ class HexGame(Board):
             self.graph = HexBoardGraph(
                 self.neighbour_dict, self.board, self.board_type)
             self.init_graph()
-            self.display_graph()
+            #self.display_graph()
     
 
     # For previous version, need to bulletproof that the versions I pass
@@ -140,9 +140,11 @@ class HexGame(Board):
 
         # Update game state with selected move
         self.game_state[move] = self.turn
+        state = self.board_to_state()
 
         # Check if game is finished
-        self.game_result = self.check_victory_condition()
+        
+        self.game_result = self.check_game_ended(state)
         
         if not self.game_result:
             # Update turn to next player
@@ -150,11 +152,17 @@ class HexGame(Board):
                 self.turn = BoardCell.BLUE
             else:
                 self.turn = BoardCell.RED
-
-        # Update game display
-        if self.display_game:
-            # self.display_board_state()
-            self.update_graph()
+            
+            # Update game display
+            if self.display_game:
+                self.update_graph()
+        else:
+            if self.display_game:
+                self.update_graph()
+                plt.pause(2)
+                plt.close()
+        
+        
 
     # For the new version, where states are passed through functions, rather than
     # kept as part of the object
@@ -257,6 +265,13 @@ class HexGame(Board):
         s = state[1:]
         for r in range(self.size):
             print(s[r*self.size:(r+1)*self.size])
+    def board_to_state(self):
+        board = [0]*self.size*self.size
+        for i in range(self.size*self.size):
+            board[i] = self.game_state[self.one_hot_to_action(i)]
+        board = [self.turn] + board
+        return tuple(board)
+
     def get_game_size(self):
         return self.size
     

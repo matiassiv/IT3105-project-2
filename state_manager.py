@@ -3,25 +3,33 @@ from game_representations.nim import Nim
 import config as cfg
 
 class StateManager:
-    def __init__(self, turn=0, game_type="hex", game_params=cfg.hex_settings, game_size=0):
-        starting_player = cfg.state_manager["turn"]
+    def __init__(
+        self, 
+        turn=0,  
+        game_params=cfg.TRAIN_game_params, 
+        game_size=0, 
+        display_game=False):
+        starting_player = 1
         if turn:
             starting_player = turn
         if game_size:
-            self.size = game_size
-        if game_type == "nim":
+            size = game_size
+        else:
+            size = game_params["size"]
+        
+        if game_params["game_type"] == "nim":
             self.game = Nim(
-                cfg.nim_settings["N"],
-                cfg.nim_settings["K"],
+                game_params["N"],
+                game_params["K"],
                 starting_player,
-                cfg.state_manager["display_game"]
+                display_game
             )
-        elif game_type == "hex":
+        elif game_params["game_type"] == "hex":
             self.game = HexGame(
-                size=game_params["size"],
+                size=size,
                 turn=starting_player,
                 graphing_freq=game_params["graphing_freq"],
-                display_game=cfg.state_manager["display_game"]
+                display_game=display_game
             )
     
     def generate_legal_moves(self, state):

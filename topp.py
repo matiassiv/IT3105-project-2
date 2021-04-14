@@ -5,16 +5,27 @@ from state_manager import StateManager
 from mcts import MCTS
 from NN_architectures.hex_ann import HexANN
 from NN_architectures.hex_res_ann import HexResANN
+from NN_architectures.hex_demo import HexDemo
 from trained_models.res_net_3_128 import architecture as res_128_3
 from trained_models.hex_6_res_temperature import architecture as res_64_2
-
+from trained_models.hex_5 import architecture as hex_5
+from ann import ANN
 
 class TOPP:
-    def __init__(self, num_contenders, num_games, contenders, search=True, search_time=1.4):
+    def __init__(
+        self, 
+        num_contenders, 
+        num_games, 
+        contenders, 
+        search=True, 
+        search_time=1.4, 
+        display_first=False
+    ):
         self.num_contenders = num_contenders
         self.num_games = num_games
         self.search = search
         self.search_time = search_time
+        self.display_first = display_first
 
         # Create a list of contender models
         self.contenders = contenders
@@ -65,6 +76,10 @@ class TOPP:
             # Alternate colors to start to test more of the network
             starting_color = i % 2 + 1
             result = self.play_game(model_1, model_2, starting_color)
+            self.display_first = False
+            if cfg.TRAIN_game_params["display_game"]:
+                self.display_first = True
+                
 
             # Model 1 is starting player, so if starting color wins then model 1 wins
             if result == starting_color:
@@ -72,7 +87,7 @@ class TOPP:
             else:
                 m2_results += 1
 
-            print("M1:", m1_results, "M2:", m2_results, flush=True)
+            #print("M1:", m1_results, "M2:", m2_results, flush=True)
         for i in range(halfway_point):
             # Alternate colors to start to test more of the network
             starting_color = i % 2 + 1
@@ -83,13 +98,13 @@ class TOPP:
                 m2_results += 1
             else:
                 m1_results += 1
-            print("M1:", m1_results, "M2:", m2_results, flush=True)
+            #print("M1:", m1_results, "M2:", m2_results, flush=True)
                 
         return m1_results, m2_results
 
     def play_game(self, p1, p2, starting_color=1):
         # Initialize game and greedy settings for MCTS
-        game = StateManager(starting_color)
+        game = StateManager(starting_color, cfg.TRAIN_game_params, display_game=self.display_first)
         m1 = MCTS(game, p1, eps=0.1, c_ucb=1, search_time=self.search_time) 
         m2 = MCTS(game, p2, eps=0.1, c_ucb=1, search_time=self.search_time)
         s = game.get_game_state()
@@ -98,12 +113,16 @@ class TOPP:
       
             action = np.argmax(m1.getActionProb(s, self.search))
             a = game.one_hot_to_action(action)
+            if self.display_first:
+                game.update_game_state(a)
             s = game.generate_next_state(s, a)
             result = game.check_game_ended(s)
             if result:
                 return result
             action = np.argmax(m2.getActionProb(s, self.search))
             a = game.one_hot_to_action(action)
+            if self.display_first:
+                game.update_game_state(a)
             s = game.generate_next_state(s, a)
             result = game.check_game_ended(s)
             if result:
@@ -122,26 +141,28 @@ class TOPP:
 
 
 if __name__ == "__main__":
-    path_res_3 = "trained_models/res_net_3_128/iteration_"
-    path_res_2_long = "trained_models/hex_6_res_temperature/iteration_"
-    path_multiple = "trained_models/multiple_iterations/iteration_"
-    contender_paths_res_3 = ["375.pt"]
-    contender_paths = ["50.pt"]
-    multiple_paths = ["0.pt", "2.pt", "4.pt"]
+    
+    # TODO add config to topp
     contenders = []
-
     # Get game info to properly load model
-    game = StateManager()
+    game = StateManager(game_params=cfg.TRAIN_game_params)
     input_size = game.get_game_size()
     output_size = len(game.generate_legal_moves(game.get_game_state()))
 
+    folderpath = cfg.TOPP_SETTINGS["model_path"]
+    for path in cfg.TOPP_SETTINGS["models"]:
+        ann = ANN(input_size, output_size, cfg.TOPP_SETTINGS["ann"])
+        ann.model.load_state_dict(torch.load(folderpath+path))
+        ann.model.eval()
+        contenders.append(ann.model)
+
+    """
     for path in multiple_paths:
         model = res_64_2.HexResANN(input_size, output_size)
         model.load_state_dict(torch.load(path_multiple+path))
         model.eval()
         contenders.append(model)
-    print(contenders)
-    """
+
     for path in contender_paths:
         model = res_64_2.HexResANN(input_size, output_size)
         model.load_state_dict(torch.load(path_res_2_long+path))
@@ -158,13 +179,14 @@ if __name__ == "__main__":
 
     tournament = TOPP(
         num_contenders=len(contenders), 
-        num_games=12, 
+        num_games=cfg.TOPP_SETTINGS["num_games"], 
         contenders=contenders, 
-        search=True,
-        search_time=0.2
+        search=cfg.TOPP_SETTINGS["search"],
+        search_time=cfg.TOPP_mcts["search_time"],
+        display_first=cfg.TOPP_SETTINGS["display_first"]
         )
 
     results = tournament.play_tournament()
     tournament.print_tournament_results(results)
 
-    #path+"0.pt", path+"50.pt", 
+

@@ -3,75 +3,42 @@ import torch
 from torch import nn
 import numpy as np
 
-
-class ResBlock(nn.Module):
-    def __init__(self, incoming=64, outgoing=64, padding=1):
-        super(ResBlock, self).__init__()
-        self.conv1 = nn.Conv2d(incoming, outgoing, 3, padding=padding)
-        self.bn1 = nn.BatchNorm2d(outgoing)
-        self.lrelu = nn.LeakyReLU()
-        self.conv2 = nn.Conv2d(outgoing, outgoing, 3, padding=padding)
-        self.bn2 = nn.BatchNorm2d(outgoing)
-
-    def forward(self, x):
-        # Save input for skip connection
-        identity = x
-
-        # First convolution
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.lrelu(out)
-
-        # Second convolution
-        out = self.conv2(out)
-        out = self.bn2(out)
-
-        # Add back skipped input
-        out += identity
-        out = self.lrelu(out)
-
-        return out
+# Get cpu or gpu device for training.
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print("Using {} device".format(device))
 
 
-class HexResANN(nn.Module):
+class HexANN(nn.Module):
     def __init__(self, input_size, output_size):
-        super(HexResANN, self).__init__()
+        super(HexANN, self).__init__()
 
         self.input_size = input_size
         self.output_size = output_size
 
-        self.input_conv = nn.Sequential(
-            nn.Conv2d(3, 64, 3, padding=1),
+        self.conv_layers = nn.Sequential(
+            nn.Conv2d(3, 32, 3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 3, padding=1),
             nn.BatchNorm2d(64),
-            nn.LeakyReLU(),
-        )
-        self.res1 = ResBlock(64, 64, 1)
-        #self.res2 = ResBlock(64, 64, 1)
-        #self.res3 = ResBlock(64, 64, 1)
-        self.reduce_conv = nn.Sequential(
+            nn.ReLU(),
             nn.Conv2d(64, 2, 1),
             nn.BatchNorm2d(2),
-            nn.LeakyReLU(),
+            nn.ReLU(),
             nn.Flatten(start_dim=1)
         )
         conv_output_size = self.get_output_shape()
 
         self.output = nn.Sequential(
-            nn.Linear(conv_output_size[1], 50),
-            nn.ReLU(),
-            nn.Linear(50, output_size),
+            nn.Linear(conv_output_size[1], output_size),
             nn.Softmax(dim=-1)
         )
 
     def forward(self, x):
 
-        x = self.input_conv(x)
-        x = self.res1(x)
-        #x = self.res2(x)
-        #x = self.res3(x)
-        x = self.reduce_conv(x)
-        x = self.output(x)
-        return x
+        x = self.conv_layers(x)
+        probs = self.output(x)
+        return probs
 
     def train_step(self, loss_fn, optimizer, batch):
 
@@ -113,11 +80,8 @@ class HexResANN(nn.Module):
     def get_output_shape(self):
         state = [1] + [0 for i in range(self.input_size**2)]
         nn_input = self.convert_state_to_input(state, self.input_size)
-        x = self.input_conv(nn_input)
-        x = self.res1(x)
-        #x = self.res2(x)
-        x = self.reduce_conv(x)
-        return x.data.shape
+
+        return self.conv_layers(nn_input).data.shape
 
     def accuracy(self, preds, targets):
 
